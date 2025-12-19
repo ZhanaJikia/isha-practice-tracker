@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  sessions     Session[]
+  completions  DailyPracticeCompletion[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model DailyPracticeCompletion {
+  id              String   @id @default(cuid())
+  userId          String
+  practiceId      String
+  dayKey          String   // "YYYY-MM-DD" in APP_TZ
+  count           Int      @default(0)
+  lastCompletedAt DateTime?
+
+  user            User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, practiceId, dayKey])
+  @@index([dayKey])
+  @@index([practiceId, dayKey])
+  @@index([userId, dayKey])
+}
