@@ -28,11 +28,12 @@ model Session {
   createdAt DateTime @default(now())
   expiresAt DateTime
 
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
 }
+
 
 model DailyPracticeCompletion {
   id              String   @id @default(cuid())
@@ -41,11 +42,13 @@ model DailyPracticeCompletion {
   dayKey          String   // "YYYY-MM-DD" in APP_TZ
   count           Int      @default(0)
   lastCompletedAt DateTime?
+  updatedAt       DateTime @updatedAt
 
-  user            User     @relation(fields: [userId], references: [id])
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, practiceId, dayKey])
   @@index([dayKey])
   @@index([practiceId, dayKey])
   @@index([userId, dayKey])
 }
+
