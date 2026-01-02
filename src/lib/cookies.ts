@@ -1,14 +1,11 @@
-import { NextResponse } from "next/server";
+import "server-only";
+import { cookies } from "next/headers";
 
-export const SESSION_COOKIE_NAME =
-  process.env.SESSION_COOKIE_NAME ?? "isha_session";
+export const SESSION_COOKIE_NAME = "isha_session"; // whatever you already use
 
-export function setSessionCookie(
-  res: NextResponse,
-  sessionId: string,
-  expiresAt: Date
-) {
-  res.cookies.set(SESSION_COOKIE_NAME, sessionId, {
+export async function setSessionCookie(token: string, expiresAt: Date) {
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -17,12 +14,14 @@ export function setSessionCookie(
   });
 }
 
-export function clearSessionCookie(res: NextResponse) {
-  res.cookies.set(SESSION_COOKIE_NAME, "", {
+export async function clearSessionCookie() {
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE_NAME, "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
+    expires: new Date(0),
     maxAge: 0,
   });
 }
