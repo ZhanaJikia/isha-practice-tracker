@@ -24,15 +24,17 @@ model User {
 
 model Session {
   id        String   @id @default(cuid())
+  tokenHash String   @unique
   userId    String
   createdAt DateTime @default(now())
   expiresAt DateTime
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
 }
+
 
 
 model DailyPracticeCompletion {
