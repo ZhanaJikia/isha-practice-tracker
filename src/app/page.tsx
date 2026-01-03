@@ -1,4 +1,4 @@
-import { PracticesList } from "@components/PracticesList";
+import { PracticesList } from "@components/tracker/PracticesList";
 import { StatsPanel } from "@components/StatsPanel";
 import { LogoutButton } from "@components/auth/LogoutButton";
 
