@@ -7,7 +7,7 @@ import { dayKeyNow, parseDayKey } from "@/lib/time";
 import { isPracticeKey } from "@/config/practices";
 
 const QuerySchema = z.object({
-  dayKey: z.string().optional(),
+  dayKey: z.string().optional(), // YYYY-MM-DD
 });
 
 export async function GET(req: Request) {
@@ -15,7 +15,10 @@ export async function GET(req: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(req.url);
-  const parsed = QuerySchema.safeParse({ dayKey: url.searchParams.get("dayKey") ?? undefined });
+  const parsed = QuerySchema.safeParse({
+    dayKey: url.searchParams.get("dayKey") ?? undefined,
+  });
+
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Invalid query", details: parsed.error.flatten() },
@@ -33,7 +36,12 @@ export async function GET(req: Request) {
 
   const rows = await prisma.dailyPracticeCompletion.findMany({
     where: { userId: user.id, dayKey },
-    select: { practiceId: true, count: true, lastCompletedAt: true, updatedAt: true },
+    select: {
+      practiceId: true,
+      count: true,
+      lastCompletedAt: true,
+      updatedAt: true,
+    },
     orderBy: { practiceId: "asc" },
   });
 

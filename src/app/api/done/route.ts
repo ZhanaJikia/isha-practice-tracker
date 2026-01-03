@@ -34,9 +34,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unknown practiceId" }, { status: 400 });
   }
 
-  const practice = PRACTICE_BY_KEY[practiceId];
-  // adjust this line to your config shape:
-  const maxPerDay = practice.maxPerDay ?? 1;
+  const maxPerDay = PRACTICE_BY_KEY[practiceId].maxPerDay;
 
   const dayKey = dayKeyNow();
   const now = new Date();
