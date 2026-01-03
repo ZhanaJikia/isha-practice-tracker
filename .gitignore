@@ -45,8 +45,7 @@ docker-compose.override.yml
 **/postgres-data/
 **/pgdata/
 
-# local curl artifacts
+# Cookies.txt should be ignored
 cookies.txt
 cookie.txt
 *.cookies
-
