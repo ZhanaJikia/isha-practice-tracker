@@ -38,7 +38,7 @@ pnpm install
 ### 2) Environment
 Create `.env` with at least:
 ```
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/isha
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/isha_practice?schema=public
 BCRYPT_COST=10            # clamped between 8-14
 SESSION_TTL_DAYS=30       # session expiry in days
 APP_TZ=Asia/Tbilisi       # optional, defaults to Asia/Tbilisi
