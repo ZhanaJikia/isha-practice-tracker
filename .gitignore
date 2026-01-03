@@ -44,3 +44,14 @@ prisma/*.db-journal
 docker-compose.override.yml
 **/postgres-data/
 **/pgdata/
+
+# Cookies.txt should be ignored
+cookies.txt
+cookie.txt
+*.cookies
+
+# local curl artifacts
+cookies.txt
+cookie.txt
+*.cookies
+
