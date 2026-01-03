@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchJson } from "@/lib/http/client";
 
 type StatsResponse = {
   totals: { totalPoints: number; activeDays: number };
@@ -13,23 +14,16 @@ export function StatsPanel() {
 
   async function load() {
     setError(null);
-
-    const res = await fetch("/api/stats?range=week", {
-      credentials: "include",
-      cache: "no-store",
-    });
-
-    if (res.status === 401) {
-      setError("Unauthorized");
+    try {
+      const stats = await fetchJson<StatsResponse>("/api/stats?range=week", {
+        cache: "no-store",
+      });
+      setData(stats);
+    } catch (e: any) {
+      if (e?.status === 401) setError("Please log in");
+      else setError(e?.message ?? "Stats failed");
       setData(null);
-      return;
     }
-    if (!res.ok) {
-      setError("Stats failed");
-      return;
-    }
-
-    setData(await res.json());
   }
 
   useEffect(() => {
@@ -37,10 +31,7 @@ export function StatsPanel() {
 
     const onUpdated = () => load();
     window.addEventListener("practice-updated", onUpdated);
-
-    return () => {
-      window.removeEventListener("practice-updated", onUpdated);
-    };
+    return () => window.removeEventListener("practice-updated", onUpdated);
   }, []);
 
   if (error)
@@ -52,8 +43,13 @@ export function StatsPanel() {
         </a>
       </section>
     );
-  
-  if (!data) return <section className="rounded border p-3 text-sm opacity-70">Loading stats…</section>;
+
+  if (!data)
+    return (
+      <section className="rounded border p-3 text-sm opacity-70">
+        Loading stats…
+      </section>
+    );
 
   return (
     <section className="rounded border p-3">

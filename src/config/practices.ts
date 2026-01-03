@@ -1,4 +1,5 @@
 
+
 export const PRACTICES = [
     { key: "walk", label: "Walk", points: 2, maxPerDay: 2 },
     { key: "cold_shower", label: "Cold shower", points: 5, maxPerDay: 1 },
