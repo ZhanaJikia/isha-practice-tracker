@@ -49,3 +49,9 @@ docker-compose.override.yml
 cookies.txt
 cookie.txt
 *.cookies
+
+# local curl artifacts
+cookies.txt
+cookie.txt
+*.cookies
+
