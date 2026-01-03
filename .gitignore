@@ -44,3 +44,9 @@ prisma/*.db-journal
 docker-compose.override.yml
 **/postgres-data/
 **/pgdata/
+
+# local curl artifacts
+cookies.txt
+cookie.txt
+*.cookies
+
