@@ -12,9 +12,7 @@ const QuerySchema = z.object({
 
 export async function GET(req: Request) {
   const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(req.url);
   const parsed = QuerySchema.safeParse({
@@ -32,7 +30,7 @@ export async function GET(req: Request) {
 
   try {
     parseDayKey(dayKey);
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "Invalid dayKey" }, { status: 400 });
   }
 
@@ -48,13 +46,7 @@ export async function GET(req: Request) {
   });
 
   const completions = rows.filter((r) => isPracticeKey(r.practiceId));
+  const byPracticeId = Object.fromEntries(completions.map((r) => [r.practiceId, r]));
 
-  const byPracticeId = Object.fromEntries(
-    completions.map((r) => [r.practiceId, r])
-  );
-
-  return NextResponse.json(
-    { dayKey, completions, byPracticeId },
-    { status: 200 }
-  );
+  return NextResponse.json({ dayKey, completions, byPracticeId }, { status: 200 });
 }
