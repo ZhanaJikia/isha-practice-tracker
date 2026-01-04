@@ -98,7 +98,6 @@ src/
     time.ts
 ```
 
-> Note: folder names may vary slightly depending on your current refactor branch, but the intent is the same: routes in `app/`, reusable UI in `components/`, product config in `config/`, and infrastructure in `lib/`.
 
 ---
 
