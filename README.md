@@ -1,75 +1,179 @@
 # Isha Practice Tracker
 
-A full-stack habit/practice tracker built with **Next.js App Router + Prisma + Postgres**.
-Goal: a clean “mid-level” codebase focused on real backend correctness (atomic updates, timezones, leaderboard queries).
+A full-stack habit / practice tracker built with **Next.js App Router + Prisma + Postgres**.
 
-## Features (current + planned)
-- ✅ Local Postgres with Docker Compose
+This project is intentionally focused on **mid-level backend correctness and architecture**, not UI polish:
+- real session-based auth
+- atomic updates with business rules
+- timezone-safe stats
+- clean separation of concerns
+
+---
+
+## Features
+
+### Implemented
+- ✅ Local Postgres via Docker Compose
 - ✅ Prisma schema + migrations
-- ⏳ Practices config (ordered source of truth)
-- ⏳ Auth (register/login/logout) using sessions + httpOnly cookies
-- ⏳ “Done” endpoint with max-per-day enforcement (atomic)
-- ⏳ Stats: today / week / month / all-time
+- ✅ Practices config as single source of truth
+- ✅ Auth: register / login / logout
+  - httpOnly cookie sessions
+  - hashed session tokens stored in DB
+- ✅ “Done” / “Undo” endpoints
+  - max-per-day enforcement
+  - atomic updates
+- ✅ Stats (weekly)
+- ✅ Centralized API client + error handling
+- ✅ Clean component + hook separation
+
+### Planned
+- ⏳ Monthly / all-time stats
 - ⏳ Leaderboard with tie-break rules
-- ⏳ Tests for business rules + sorting
+- ⏳ Tests for business rules
+- ⏳ UI polish
+
+---
 
 ## Tech Stack
-- Next.js (App Router)
-- TypeScript
-- TailwindCSS
-- Postgres (Docker Compose)
-- Prisma ORM
+- **Next.js** (App Router)
+- **TypeScript**
+- **TailwindCSS**
+- **Postgres** (Docker Compose)
+- **Prisma ORM**
 
-## Architecture (high level)
+---
 
+## Architecture Overview
+
+```
 Browser
-  -> Next.js pages (server components)
-  -> Next.js route handlers (/app/api/*)
-  -> Prisma client
-  -> Postgres
+  → Next.js pages (app/*)
+  → API route handlers (app/api/*)
+  → Prisma client
+  → Postgres
+```
+
+---
+
+## Project Structure
+
+```
+src/
+  app/
+    api/
+      login/
+      logout/
+      register/
+      me/
+      stats/
+      done/
+      undo/
+    login/
+      page.tsx          # /login route
+    page.tsx            # main app page
+
+  components/
+    auth/
+      AuthForm.tsx
+      LogoutButton.tsx
+    tracker/
+      PracticesList.tsx
+      PracticeRow.tsx
+      StatsPanel.tsx
+      useTrackerData.ts
+      useTrackerActions.ts
+
+  config/
+    practices.ts        # practices source of truth
+    uiText.ts           # user-facing strings
+
+  lib/
+    auth/
+      session.ts        # session logic
+      password.ts       # bcrypt helpers
+    http/
+      client.ts         # fetchJson wrapper
+    db.ts
+    cookies.ts
+    time.ts
+```
+
+> Note: folder names may vary slightly depending on your current refactor branch, but the intent is the same: routes in `app/`, reusable UI in `components/`, product config in `config/`, and infrastructure in `lib/`.
+
+---
+
+## Auth Model (Important)
+
+- Passwords are hashed with **bcrypt**
+- Sessions use **random high-entropy tokens**
+- Only **token hashes** are stored in the database
+- Raw session token is stored in an **httpOnly cookie**
+- Cookies are sent automatically with API requests
+
+This avoids:
+- storing user IDs in cookies
+- leaking session secrets
+- client-side auth state bugs
+
+---
 
 ## Getting Started
 
-### 1) Install deps
+### 1) Install dependencies
 ```bash
 pnpm install
 ```
 
+---
+
 ### 2) Environment
-Create `.env` with at least:
-```
+
+Create a `.env` file:
+
+```env
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/isha_practice?schema=public
-BCRYPT_COST=10            # clamped between 8-14
-SESSION_TTL_DAYS=30       # session expiry in days
-APP_TZ=Asia/Tbilisi       # optional, defaults to Asia/Tbilisi
+
+BCRYPT_COST=10
+SESSION_TTL_DAYS=30
+APP_TZ=Asia/Tbilisi
 ```
+
+---
 
 ### 3) Database
 ```bash
-docker compose up -d        # start Postgres
-pnpm db:migrate             # apply migrations
-pnpm db:seed                # optional: seed data
+docker compose up -d
+pnpm db:migrate
+pnpm db:seed   # optional
 ```
 
-### 4) Run
+---
+
+### 4) Run the app
 ```bash
 pnpm dev
 ```
 
-## Requirements
-- Node.js >= 20.9
-- pnpm
-- Docker (for local Postgres)
+Open in browser:
+- http://localhost:3000/login
+- register or login
+- then go to `/`
+
+---
 
 ## Scripts
+
 - `pnpm dev` – start dev server
 - `pnpm build` / `pnpm start` – production build/run
-- `pnpm lint` – runs `eslint .`
-- `pnpm typecheck` – TS type check
+- `pnpm lint` – ESLint
+- `pnpm typecheck` – TypeScript
 - `pnpm check` – lint + typecheck
-- `pnpm db:*` – Prisma helpers (generate, migrate, deploy, seed, reset, studio)
+- `pnpm db:*` – Prisma helpers
+
+---
 
 ## Notes
-- Auth hashing uses `BCRYPT_COST`, clamped to 8–14.
-- Sessions expire after `SESSION_TTL_DAYS`; stored in Postgres via Prisma.
-- Timezone-sensitive code defaults to `APP_TZ` (`Asia/Tbilisi` if unset).
+
+- `BCRYPT_COST` is clamped between **8–14**
+- Sessions expire after `SESSION_TTL_DAYS`
+- All date logic is timezone-aware via `APP_TZ`
