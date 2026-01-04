@@ -1,0 +1,49 @@
+"use client";
+
+import { useState } from "react";
+import type { PracticeKey } from "@/config/practices";
+import { donePractice, undoPractice } from "./api";
+
+import { UI_TEXT } from "@/config/uiText";
+
+function emitPracticeUpdated() {
+  window.dispatchEvent(new Event("practice-updated"));
+}
+
+export function useTrackerActions(reload: () => Promise<void>) {
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  async function onDone(practiceId: PracticeKey) {
+    try {
+      setBusyKey(practiceId);
+      setActionError(null);
+      await donePractice(practiceId);
+      await reload();
+      emitPracticeUpdated();
+    } catch (e: any) {
+      if (e?.status === 409) setActionError(e?.message ?? UI_TEXT.errors.maxReached);
+      else if (e?.status === 401) setActionError(UI_TEXT.auth.pleaseLogin);
+      else setActionError(e?.message ?? UI_TEXT.errors.doneFailed);
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function onUndo(practiceId: PracticeKey) {
+    try {
+      setBusyKey(practiceId);
+      setActionError(null);
+      await undoPractice(practiceId);
+      await reload();
+      emitPracticeUpdated();
+    } catch (e: any) {
+      if (e?.status === 401) setActionError("Please log in");
+      else setActionError(e?.message ?? "Undo failed");
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  return { busyKey, actionError, onDone, onUndo };
+}

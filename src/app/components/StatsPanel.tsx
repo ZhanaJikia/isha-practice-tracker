@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { fetchJson } from "@/lib/http/client";
 
+import { UI_TEXT } from "@/config/uiText";
+
 type StatsResponse = {
   totals: { totalPoints: number; activeDays: number };
   perPractice: Array<{ practiceId: string; label: string; count: number; points: number }>;
@@ -20,8 +22,8 @@ export function StatsPanel() {
       });
       setData(stats);
     } catch (e: any) {
-      if (e?.status === 401) setError("Please log in");
-      else setError(e?.message ?? "Stats failed");
+      if (e?.status === 401) setError(UI_TEXT.auth.pleaseLogin);
+      else setError(e?.message ?? UI_TEXT.errors.statsFailed);
       setData(null);
     }
   }
@@ -38,9 +40,7 @@ export function StatsPanel() {
     return (
       <section className="rounded border p-3 text-sm">
         {error}{" "}
-        <a className="underline" href="/login">
-          Login
-        </a>
+        <a className="underline" href="/login">{UI_TEXT.auth.loginCta}</a>
       </section>
     );
 

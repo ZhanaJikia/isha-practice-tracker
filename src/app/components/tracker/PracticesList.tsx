@@ -1,89 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { PracticeKey } from "@/config/practices";
-
 import { PracticeRow } from "./PracticeRow";
-import { getPractices, getCompletions, donePractice, undoPractice } from "./api";
-import type { CompletionsResponse } from "./types";
-import type { Practice } from "@/config/practices";
-
-function emitPracticeUpdated() {
-  window.dispatchEvent(new Event("practice-updated"));
-}
+import { useTrackerData } from "./useTrackerData";
+import { useTrackerActions } from "./useTrackerActions";
 
 export function PracticesList() {
-  const [practices, setPractices] = useState<Practice[] | null>(null);
-  const [completions, setCompletions] = useState<CompletionsResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const { practices, completions, byPracticeId, error, reload } = useTrackerData();
+  const { busyKey, actionError, onDone, onUndo } = useTrackerActions(reload);
 
-  async function load() {
-    setError(null);
-    try {
-      const [p, c] = await Promise.all([getPractices(), getCompletions()]);
-      setPractices(p.practices);
-      setCompletions(c);
-    } catch (e: any) {
-      if (e?.status === 401) setError("Please log in");
-      else setError(e?.message ?? "Failed to load");
-    }
-  }
+  const msg = actionError ?? error;
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  const byPracticeId = useMemo(
-    () => completions?.byPracticeId ?? {},
-    [completions]
-  );
-
-  async function handleDone(practiceId: PracticeKey) {
-    try {
-      setBusyKey(practiceId);
-      setError(null);
-
-      await donePractice(practiceId);
-      await load();
-      emitPracticeUpdated();
-    } catch (e: any) {
-      if (e?.status === 409) setError(e?.message ?? "Max per day reached");
-      else if (e?.status === 401) setError("Please log in");
-      else setError(e?.message ?? "Done failed");
-    } finally {
-      setBusyKey(null);
-    }
-  }
-
-  async function handleUndo(practiceId: PracticeKey) {
-    try {
-      setBusyKey(practiceId);
-      setError(null);
-
-      await undoPractice(practiceId);
-      await load();
-      emitPracticeUpdated();
-    } catch (e: any) {
-      if (e?.status === 401) setError("Please log in");
-      else setError(e?.message ?? "Undo failed");
-    } finally {
-      setBusyKey(null);
-    }
-  }
-
-  if (error) {
+  if (msg) {
     return (
       <section className="rounded border p-3">
         <div className="text-sm">
-          {error}{" "}
+          {msg}{" "}
           <a className="underline" href="/login">
             Login
           </a>
         </div>
-
-        <div className="mt-3 flex gap-2">
-          <button className="rounded border px-3 py-2 text-sm" onClick={load}>
+        <div className="mt-3">
+          <button className="rounded border px-3 py-2 text-sm" onClick={reload}>
             Retry
           </button>
         </div>
@@ -106,20 +43,16 @@ export function PracticesList() {
       </div>
 
       <ul className="space-y-2">
-        {practices.map((p) => {
-          const count = byPracticeId[p.key]?.count ?? 0;
-          const busy = busyKey === p.key;
-          return (
-            <PracticeRow
-              key={p.key}
-              practice={p}
-              count={count}
-              busy={busy}
-              onDone={handleDone}
-              onUndo={handleUndo}
-            />
-          );
-        })}
+        {practices.map((p) => (
+          <PracticeRow
+            key={p.key}
+            practice={p}
+            count={byPracticeId[p.key]?.count ?? 0}
+            busy={busyKey === p.key}
+            onDone={onDone}
+            onUndo={onUndo}
+          />
+        ))}
       </ul>
     </section>
   );
