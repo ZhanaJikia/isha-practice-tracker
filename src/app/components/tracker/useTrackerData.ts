@@ -5,6 +5,9 @@ import type { Practice } from "@/config/practices";
 import type { CompletionsResponse } from "./types";
 import { getPractices, getCompletions } from "./api";
 
+import { UI_TEXT } from "@/config/uiText";
+
+
 export function useTrackerData() {
   const [practices, setPractices] = useState<Practice[] | null>(null);
   const [completions, setCompletions] = useState<CompletionsResponse | null>(null);
@@ -17,8 +20,8 @@ export function useTrackerData() {
       setPractices(p.practices);
       setCompletions(c);
     } catch (e: any) {
-      if (e?.status === 401) setError("Please log in");
-      else setError(e?.message ?? "Failed to load");
+      if (e?.status === 401) setError(UI_TEXT.auth.pleaseLogin);
+      else setError(e?.message ?? UI_TEXT.errors.genericLoad);
     }
   }
 

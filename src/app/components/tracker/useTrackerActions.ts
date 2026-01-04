@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { PracticeKey } from "@/config/practices";
 import { donePractice, undoPractice } from "./api";
 
+import { UI_TEXT } from "@/config/uiText";
+
 function emitPracticeUpdated() {
   window.dispatchEvent(new Event("practice-updated"));
 }
@@ -20,9 +22,9 @@ export function useTrackerActions(reload: () => Promise<void>) {
       await reload();
       emitPracticeUpdated();
     } catch (e: any) {
-      if (e?.status === 409) setActionError(e?.message ?? "Max per day reached");
-      else if (e?.status === 401) setActionError("Please log in");
-      else setActionError(e?.message ?? "Done failed");
+      if (e?.status === 409) setActionError(e?.message ?? UI_TEXT.errors.maxReached);
+      else if (e?.status === 401) setActionError(UI_TEXT.auth.pleaseLogin);
+      else setActionError(e?.message ?? UI_TEXT.errors.doneFailed);
     } finally {
       setBusyKey(null);
     }
