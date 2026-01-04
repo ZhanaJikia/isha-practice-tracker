@@ -1,5 +1,5 @@
 import { PracticesList } from "@components/tracker/PracticesList";
-import { StatsPanel } from "@components/StatsPanel";
+import { StatsPanel } from "@components/tracker/StatsPanel";
 import { LogoutButton } from "@components/auth/LogoutButton";
 
 export default function HomePage() {
