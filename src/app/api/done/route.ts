@@ -5,91 +5,60 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { dayKeyNow } from "@/lib/time";
 import { PRACTICE_BY_KEY, isPracticeKey } from "@/config/practices";
+import {
+  unauthorized,
+  validationError,
+  maxPerDayReached,
+  internalError,
+} from "@/lib/http/errors";
 
-const DoneSchema = z.object({
+import { applyDone } from "@/server/tracker/done";
+
+export const dynamic = "force-dynamic";
+
+const BodySchema = z.object({
   practiceId: z.string(),
-  delta: z.number().int().positive().max(50).optional(), // default 1
+  delta: z.number().int().min(1).max(50).optional(),
 });
 
 export async function POST(req: Request) {
   const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!user) return unauthorized();
 
   const body = await req.json().catch(() => null);
-  const parsed = DoneSchema.safeParse(body);
-
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid input", details: parsed.error.flatten() },
-      { status: 400 }
-    );
-  }
+  const parsed = BodySchema.safeParse(body);
+  if (!parsed.success) return validationError(parsed.error.flatten());
 
   const { practiceId } = parsed.data;
   const delta = parsed.data.delta ?? 1;
 
   if (!isPracticeKey(practiceId)) {
-    return NextResponse.json({ error: "Unknown practiceId" }, { status: 400 });
+    return validationError({ practiceId: ["Unknown practiceId"] });
   }
 
   const maxPerDay = PRACTICE_BY_KEY[practiceId].maxPerDay;
-
   const dayKey = dayKeyNow();
   const now = new Date();
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
-      const existing = await tx.dailyPracticeCompletion.findUnique({
-        where: {
-          userId_practiceId_dayKey: {
-            userId: user.id,
-            practiceId,
-            dayKey,
-          },
-        },
-        select: { id: true, count: true },
-      });
-
-      if (!existing) {
-        if (delta > maxPerDay) {
-          return { kind: "max_reached" as const, count: 0, maxPerDay };
-        }
-
-        const created = await tx.dailyPracticeCompletion.create({
-          data: {
-            userId: user.id,
-            practiceId,
-            dayKey,
-            count: delta,
-            lastCompletedAt: now,
-          },
-        });
-
-        return { kind: "ok" as const, row: created };
-      }
-
-      if (existing.count + delta > maxPerDay) {
-        return { kind: "max_reached" as const, count: existing.count, maxPerDay };
-      }
-
-      const updated = await tx.dailyPracticeCompletion.update({
-        where: { id: existing.id },
-        data: {
-          count: { increment: delta },
-          lastCompletedAt: now,
-        },
-      });
-
-      return { kind: "ok" as const, row: updated };
-    });
+    const result = await prisma.$transaction((tx) =>
+      applyDone(tx, {
+        userId: user.id,
+        practiceId,
+        dayKey,
+        delta,
+        maxPerDay,
+        now,
+      })
+    );
 
     if (result.kind === "max_reached") {
-      return NextResponse.json(
-        { error: "Max per day reached", count: result.count, maxPerDay, dayKey, practiceId },
-        { status: 409 }
-      );
+      return maxPerDayReached({
+        practiceId,
+        dayKey,
+        maxPerDay: result.maxPerDay,
+        count: result.count,
+      });
     }
 
     return NextResponse.json(
@@ -98,6 +67,6 @@ export async function POST(req: Request) {
     );
   } catch (e) {
     console.error("DONE_ERROR:", e);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return internalError();
   }
 }
