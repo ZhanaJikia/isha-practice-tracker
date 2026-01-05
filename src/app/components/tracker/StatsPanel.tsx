@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { fetchJson } from "@/lib/http/client";
 import { UI_TEXT } from "@/config/uiText";
@@ -13,25 +11,31 @@ export function StatsPanel() {
   const [data, setData] = useState<StatsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
-    setError(null);
-    try {
-      const stats = await fetchJson<StatsResponse>("/api/stats?range=week", { cache: "no-store" });
-      setData(stats);
-    } catch (e: unknown) {
-      const err = e as { status?: number; message?: string };
-      if (err?.status === 401) setError(UI_TEXT.auth.pleaseLogin);
-      else setError(err?.message ?? UI_TEXT.errors.statsFailed);
-      setData(null);
-    }
-  }
-
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load();
+    let mounted = true;
+
+    const load = async () => {
+      setError(null);
+      try {
+        const stats = await fetchJson<StatsResponse>("/api/stats?range=week", { cache: "no-store" });
+        if (!mounted) return;
+        setData(stats);
+      } catch (e: unknown) {
+        const err = e as { status?: number; message?: string };
+        if (!mounted) return;
+        if (err?.status === 401) setError(UI_TEXT.auth.pleaseLogin);
+        else setError(err?.message ?? UI_TEXT.errors.statsFailed);
+        setData(null);
+      }
+    };
+
+    load();
     const onUpdated = () => { void load(); };
     window.addEventListener("practice-updated", onUpdated);
-    return () => window.removeEventListener("practice-updated", onUpdated);
+    return () => {
+      mounted = false;
+      window.removeEventListener("practice-updated", onUpdated);
+    };
   }, []);
 
   if (error)
