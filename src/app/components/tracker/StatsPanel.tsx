@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { fetchJson } from "@/lib/http/client";
-
 import { UI_TEXT } from "@/config/uiText";
 
 type StatsResponse = {
@@ -17,21 +16,20 @@ export function StatsPanel() {
   async function load() {
     setError(null);
     try {
-      const stats = await fetchJson<StatsResponse>("/api/stats?range=week", {
-        cache: "no-store",
-      });
+      const stats = await fetchJson<StatsResponse>("/api/stats?range=week", { cache: "no-store" });
       setData(stats);
-    } catch (e: any) {
-      if (e?.status === 401) setError(UI_TEXT.auth.pleaseLogin);
-      else setError(e?.message ?? UI_TEXT.errors.statsFailed);
+    } catch (e: unknown) {
+      const err = e as { status?: number; message?: string };
+      if (err?.status === 401) setError(UI_TEXT.auth.pleaseLogin);
+      else setError(err?.message ?? UI_TEXT.errors.statsFailed);
       setData(null);
     }
   }
 
   useEffect(() => {
-    load();
-
-    const onUpdated = () => load();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+    const onUpdated = () => { void load(); };
     window.addEventListener("practice-updated", onUpdated);
     return () => window.removeEventListener("practice-updated", onUpdated);
   }, []);
@@ -39,8 +37,7 @@ export function StatsPanel() {
   if (error)
     return (
       <section className="rounded border p-3 text-sm">
-        {error}{" "}
-        <a className="underline" href="/login">{UI_TEXT.auth.loginCta}</a>
+        {error} <a className="underline" href="/login">{UI_TEXT.auth.loginCta}</a>
       </section>
     );
 
@@ -56,7 +53,6 @@ export function StatsPanel() {
       <h2 className="font-medium">
         Week points: {data.totals.totalPoints} · Active days: {data.totals.activeDays}
       </h2>
-
       <ul className="mt-2 space-y-1 text-sm">
         {data.perPractice.map((p) => (
           <li key={p.practiceId} className="flex justify-between">
