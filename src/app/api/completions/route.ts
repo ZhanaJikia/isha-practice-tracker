@@ -6,13 +6,22 @@ import { getCurrentUser } from "@/lib/auth";
 import { dayKeyNow, parseDayKey } from "@/lib/time";
 import { isPracticeKey } from "@/config/practices";
 
+import {
+  unauthorized,
+  validationError,
+  invalidDayKey,
+  internalError,
+} from "@/lib/http/errors";
+
 const QuerySchema = z.object({
-  dayKey: z.string().optional(), // YYYY-MM-DD
+  dayKey: z.string().optional(),
 });
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!user) return unauthorized();
 
   const url = new URL(req.url);
   const parsed = QuerySchema.safeParse({
@@ -20,10 +29,7 @@ export async function GET(req: Request) {
   });
 
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid query", details: parsed.error.flatten() },
-      { status: 400 }
-    );
+    return validationError(z.flattenError(parsed.error), "Invalid query");
   }
 
   const dayKey = parsed.data.dayKey ?? dayKeyNow();
@@ -31,22 +37,27 @@ export async function GET(req: Request) {
   try {
     parseDayKey(dayKey);
   } catch {
-    return NextResponse.json({ error: "Invalid dayKey" }, { status: 400 });
+    return invalidDayKey(dayKey);
   }
 
-  const rows = await prisma.dailyPracticeCompletion.findMany({
-    where: { userId: user.id, dayKey },
-    select: {
-      practiceId: true,
-      count: true,
-      lastCompletedAt: true,
-      updatedAt: true,
-    },
-    orderBy: { practiceId: "asc" },
-  });
+  try {
+    const rows = await prisma.dailyPracticeCompletion.findMany({
+      where: { userId: user.id, dayKey },
+      select: {
+        practiceId: true,
+        count: true,
+        lastCompletedAt: true,
+        updatedAt: true,
+      },
+      orderBy: { practiceId: "asc" },
+    });
 
-  const completions = rows.filter((r) => isPracticeKey(r.practiceId));
-  const byPracticeId = Object.fromEntries(completions.map((r) => [r.practiceId, r]));
+    const completions = rows.filter((r) => isPracticeKey(r.practiceId));
+    const byPracticeId = Object.fromEntries(completions.map((r) => [r.practiceId, r]));
 
-  return NextResponse.json({ dayKey, completions, byPracticeId }, { status: 200 });
+    return NextResponse.json({ dayKey, completions, byPracticeId }, { status: 200 });
+  } catch (e) {
+    console.error("COMPLETIONS_ERROR:", e);
+    return internalError();
+  }
 }

@@ -5,6 +5,10 @@ import { prisma } from "@/lib/db";
 import { createSession, hashPassword, isUniqueConstraintError } from "@/lib/auth";
 import { setSessionCookie } from "@/lib/cookies";
 
+import { validationError, internalError, usernameTaken } from "@/lib/http/errors";
+
+export const dynamic = "force-dynamic";
+
 const RegisterSchema = z.object({
   username: z
     .string()
@@ -19,10 +23,7 @@ export async function POST(req: Request) {
   const parsed = RegisterSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid input", details: parsed.error.flatten() },
-      { status: 400 }
-    );
+    return validationError(z.treeifyError(parsed.error), "Invalid input");
   }
 
   const { username, password } = parsed.data;
@@ -43,16 +44,8 @@ export async function POST(req: Request) {
     console.error("REGISTER_ERROR:", e);
 
     if (isUniqueConstraintError(e)) {
-      return NextResponse.json({ error: "Username already taken" }, { status: 409 });
+      return usernameTaken(username);
     }
-
-    const debug =
-      process.env.NODE_ENV !== "production"
-        ? e instanceof Error
-          ? { message: e.message, stack: e.stack }
-          : { message: String(e) }
-        : undefined;
-
-    return NextResponse.json({ error: "Server error", debug }, { status: 500 });
+    return internalError();
   }
 }

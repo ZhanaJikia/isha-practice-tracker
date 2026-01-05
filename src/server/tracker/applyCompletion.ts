@@ -1,39 +1,23 @@
-import type { Prisma, DailyPracticeCompletion } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import type { DailyPracticeCompletion } from "@prisma/client";
 
-export type DoneResult =
+export type ApplyCompletionResult =
   | { kind: "ok"; row: DailyPracticeCompletion }
   | { kind: "max_reached"; count: number; maxPerDay: number };
 
-type Key = { userId: string; practiceId: string; dayKey: string };
+type CompletionKey = { userId: string; practiceId: string; dayKey: string };
 
 function isUniqueViolation(e: unknown): boolean {
-  // Prisma unique constraint violation (P2002)
-  if (!e || typeof e !== "object") return false;
-  // #region agent log
-  fetch("http://127.0.0.1:7242/ingest/61dcf881-21e5-4676-b8e9-1cebecb865b5", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      sessionId: "debug-session",
-      runId: "prefix",
-      hypothesisId: "H3",
-      location: "server/tracker/done.ts:isUniqueViolation",
-      message: "Checking unique violation",
-      data: { hasCode: "code" in e ? (e as { code?: string }).code : undefined },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-  return "code" in e && (e as { code?: string }).code === "P2002";
+  return e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 }
 
-async function getRow(tx: Prisma.TransactionClient, key: Key) {
+async function findRow(tx: Prisma.TransactionClient, key: CompletionKey) {
   return tx.dailyPracticeCompletion.findUnique({
     where: { userId_practiceId_dayKey: key },
   });
 }
 
-async function getCount(tx: Prisma.TransactionClient, key: Key) {
+async function findCount(tx: Prisma.TransactionClient, key: CompletionKey) {
   const row = await tx.dailyPracticeCompletion.findUnique({
     where: { userId_practiceId_dayKey: key },
     select: { count: true },
@@ -43,7 +27,7 @@ async function getCount(tx: Prisma.TransactionClient, key: Key) {
 
 async function tryIncrement(
   tx: Prisma.TransactionClient,
-  key: Key,
+  key: CompletionKey,
   delta: number,
   maxPerDay: number,
   now: Date
@@ -54,12 +38,16 @@ async function tryIncrement(
   });
 
   if (res.count !== 1) return null;
-  return getRow(tx, key);
+
+  const row = await findRow(tx, key);
+  // Should exist after successful updateMany. If not, something is inconsistent.
+  if (!row) throw new Error("Invariant failed: completion row missing after increment");
+  return row;
 }
 
-async function tryCreate(
+async function createRow(
   tx: Prisma.TransactionClient,
-  key: Key,
+  key: CompletionKey,
   delta: number,
   now: Date
 ): Promise<DailyPracticeCompletion> {
@@ -69,11 +57,11 @@ async function tryCreate(
 }
 
 /**
- * Concurrency-safe "done":
- * - increments count up to maxPerDay per (user, practice, dayKey)
- * - safe under parallel requests
+ * Concurrency-safe completion increment:
+ * - Enforces maxPerDay for (userId, practiceId, dayKey)
+ * - Safe under parallel requests (uses conditional update + unique-create fallback)
  */
-export async function applyDone(
+export async function applyCompletion(
   tx: Prisma.TransactionClient,
   params: {
     userId: string;
@@ -83,17 +71,19 @@ export async function applyDone(
     maxPerDay: number;
     now: Date;
   }
-): Promise<DoneResult> {
+): Promise<ApplyCompletionResult> {
   const { userId, practiceId, dayKey, delta, maxPerDay, now } = params;
-  const key: Key = { userId, practiceId, dayKey };
+  const key: CompletionKey = { userId, practiceId, dayKey };
 
   if (delta > maxPerDay) return { kind: "max_reached", count: 0, maxPerDay };
 
+  // Fast path: conditional increment (won't exceed max)
   const updated = await tryIncrement(tx, key, delta, maxPerDay, now);
   if (updated) return { kind: "ok", row: updated };
 
+  // If row doesn't exist, create it. If it races, retry increment.
   try {
-    const created = await tryCreate(tx, key, delta, now);
+    const created = await createRow(tx, key, delta, now);
     return { kind: "ok", row: created };
   } catch (e) {
     if (!isUniqueViolation(e)) throw e;
@@ -101,7 +91,7 @@ export async function applyDone(
     const retry = await tryIncrement(tx, key, delta, maxPerDay, now);
     if (retry) return { kind: "ok", row: retry };
 
-    const count = await getCount(tx, key);
+    const count = await findCount(tx, key);
     return { kind: "max_reached", count, maxPerDay };
   }
 }
