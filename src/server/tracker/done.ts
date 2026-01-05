@@ -7,23 +7,7 @@ export type DoneResult =
 type Key = { userId: string; practiceId: string; dayKey: string };
 
 function isUniqueViolation(e: unknown): boolean {
-  // Prisma unique constraint violation (P2002)
   if (!e || typeof e !== "object") return false;
-  // #region agent log
-  fetch("http://127.0.0.1:7242/ingest/61dcf881-21e5-4676-b8e9-1cebecb865b5", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      sessionId: "debug-session",
-      runId: "prefix",
-      hypothesisId: "H3",
-      location: "server/tracker/done.ts:isUniqueViolation",
-      message: "Checking unique violation",
-      data: { hasCode: "code" in e ? (e as { code?: string }).code : undefined },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
   return "code" in e && (e as { code?: string }).code === "P2002";
 }
 
