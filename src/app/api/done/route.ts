@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { dayKeyNow } from "@/lib/time";
 import { PRACTICE_BY_KEY, isPracticeKey } from "@/config/practices";
+
 import {
   unauthorized,
   validationError,
@@ -12,13 +13,13 @@ import {
   internalError,
 } from "@/lib/http/errors";
 
-import { applyDone } from "@/server/tracker/done";
+import { applyCompletion } from "@/server/tracker/applyCompletion";
 
 export const dynamic = "force-dynamic";
 
 const BodySchema = z.object({
   practiceId: z.string(),
-  delta: z.number().int().min(1).max(50).optional(),
+  delta: z.number().int().min(1).max(50).optional(), // default handled below
 });
 
 export async function POST(req: Request) {
@@ -27,11 +28,15 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => null);
   const parsed = BodySchema.safeParse(body);
-  if (!parsed.success) return validationError(parsed.error.flatten());
+
+  if (!parsed.success) {
+    return validationError(z.treeifyError(parsed.error));
+  }
 
   const { practiceId } = parsed.data;
   const delta = parsed.data.delta ?? 1;
 
+  // ✅ this is the narrowing point TypeScript actually understands
   if (!isPracticeKey(practiceId)) {
     return validationError({ practiceId: ["Unknown practiceId"] });
   }
@@ -42,7 +47,7 @@ export async function POST(req: Request) {
 
   try {
     const result = await prisma.$transaction((tx) =>
-      applyDone(tx, {
+      applyCompletion(tx, {
         userId: user.id,
         practiceId,
         dayKey,

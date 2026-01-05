@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 
 export type ApiErrorCode =
   | "UNAUTHORIZED"
+  | "INVALID_CREDENTIALS"
   | "VALIDATION_ERROR"
   | "INVALID_DAY_KEY"
   | "MAX_PER_DAY_REACHED"
+  | "USERNAME_TAKEN"
   | "INTERNAL_ERROR";
 
 export type ApiErrorPayload<TDetails = unknown> = {
@@ -28,9 +30,12 @@ export function jsonError<TDetails = unknown>(
   return NextResponse.json(payload, { status });
 }
 
-// Convenience helpers so routes don’t repeat strings/status codes
 export function unauthorized() {
   return jsonError(401, "UNAUTHORIZED", "Unauthorized");
+}
+
+export function invalidCredentials() {
+  return jsonError(401, "INVALID_CREDENTIALS", "Invalid credentials");
 }
 
 export function validationError(details?: unknown, message = "Invalid input") {
@@ -48,6 +53,10 @@ export function maxPerDayReached(details: {
   count: number;
 }) {
   return jsonError(409, "MAX_PER_DAY_REACHED", "Max per day reached", details);
+}
+
+export function usernameTaken(username?: string) {
+  return jsonError(409, "USERNAME_TAKEN", "Username already taken", username ? { username } : undefined);
 }
 
 export function internalError() {
