@@ -16,8 +16,9 @@
     "db:reset": "prisma migrate reset",
     "check": "pnpm lint && pnpm typecheck",
     "postinstall": "prisma generate",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "dotenv -e .env.test -- vitest run",
+    "test:watch": "dotenv -e .env.test -- vitest",
+    "prepare": "husky"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -41,8 +42,10 @@
     "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.0",
+    "husky": "^9.1.7",
     "prisma": "^7.2.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
