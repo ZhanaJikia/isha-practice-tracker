@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { dayKeyNow } from "@/lib/time";
-import { isPracticeKey } from "@/config/practices";
-
 import { unauthorized, validationError, internalError } from "@/lib/http/errors";
-import { undoCompletion } from "@/server/completions/undoCompletion";
+import { undo } from "@/server/tracker/undo";
 
 export const dynamic = "force-dynamic";
 
@@ -22,33 +18,22 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => null);
   const parsed = BodySchema.safeParse(body);
-
-  if (!parsed.success) {
-    return validationError(z.treeifyError(parsed.error), "Invalid input");
-  }
-
-  const { practiceId } = parsed.data;
-  const delta = parsed.data.delta ?? 1;
-
-  if (!isPracticeKey(practiceId)) {
-    return validationError({ practiceId: ["Unknown practiceId"] }, "Invalid input");
-  }
-
-  const dayKey = dayKeyNow();
+  if (!parsed.success) return validationError(z.treeifyError(parsed.error), "Invalid input");
 
   try {
-    const result = await prisma.$transaction((tx) =>
-      undoCompletion(tx, {
-        userId: user.id,
-        practiceId,
-        dayKey,
-        delta,
-      })
-    );
+    const result = await undo({ userId: user.id, ...parsed.data });
 
-    return NextResponse.json({ ok: true, result, dayKey, practiceId }, { status: 200 });
+    if (result.kind === "invalid_practice") {
+      return validationError({ practiceId: ["Unknown practiceId"] }, "Invalid input");
+    }
+
+    return NextResponse.json(
+      { ok: true, result: result.result, dayKey: result.dayKey, practiceId: result.practiceId },
+      { status: 200 }
+    );
   } catch (e) {
     console.error("UNDO_ERROR:", e);
     return internalError();
   }
 }
+
