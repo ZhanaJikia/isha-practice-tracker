@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { prisma } from "@/lib/db";
-import { createSession, hashPassword, isUniqueConstraintError } from "@/lib/auth";
 import { setSessionCookie } from "@/lib/cookies";
-
 import { validationError, internalError, usernameTaken } from "@/lib/http/errors";
+import { register } from "@/server/auth/register";
 
 export const dynamic = "force-dynamic";
 
@@ -26,26 +24,18 @@ export async function POST(req: Request) {
     return validationError(z.treeifyError(parsed.error), "Invalid input");
   }
 
-  const { username, password } = parsed.data;
+  const { username } = parsed.data;
 
   try {
-    const passwordHash = await hashPassword(password);
+    const result = await register(parsed.data);
 
-    const user = await prisma.user.create({
-      data: { username, passwordHash },
-      select: { id: true, username: true, createdAt: true },
-    });
+    if (result.kind === "username_taken") return usernameTaken(username);
 
-    const { token, expiresAt } = await createSession(user.id);
-    await setSessionCookie(token, expiresAt);
-
-    return NextResponse.json({ user }, { status: 201 });
+    await setSessionCookie(result.token, result.expiresAt);
+    return NextResponse.json({ user: result.user }, { status: 201 });
   } catch (e) {
     console.error("REGISTER_ERROR:", e);
-
-    if (isUniqueConstraintError(e)) {
-      return usernameTaken(username);
-    }
     return internalError();
   }
 }
+
