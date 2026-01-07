@@ -15,7 +15,9 @@
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset",
     "check": "pnpm lint && pnpm typecheck",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -44,6 +46,7 @@
     "prisma": "^7.2.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.16"
   }
 }
