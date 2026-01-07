@@ -159,19 +159,39 @@ With the Docker DB running:
 docker exec -it isha_tracker_db psql -U postgres -c "CREATE DATABASE isha_practice_test;"
 ```
 
-### 2) Apply migrations to the test DB
+### 2) Create `.env.test`
+Create a `.env.test` file in the repo root:
 
-```bash
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/isha_practice_test?schema=public" pnpm db:deploy
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/isha_practice_test?schema=public"
 ```
 
-### 3) Run tests
+### 3) Apply migrations to the test DB
 
 ```bash
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/isha_practice_test?schema=public" pnpm test
+pnpm db:deploy
 ```
 
-Note: the integration suite asserts `DATABASE_URL` contains `isha_practice_test` as a safety check.
+### 4) Run tests
+
+```bash
+pnpm test
+```
+
+Note:
+- `pnpm test` loads `.env.test` via `dotenv-cli`.
+- The integration suite asserts `DATABASE_URL` contains `isha_practice_test` as a safety check.
+
+---
+
+## Quality Gates (local)
+
+This repo uses **Husky** to run checks automatically:
+
+- `pre-commit` → `pnpm check` (eslint + typecheck)
+- `pre-push` → `pnpm test` (integration tests)
+
+If you need to bypass hooks temporarily (not recommended), you can use `git commit --no-verify` / `git push --no-verify`.
 
 ---
 
@@ -182,7 +202,7 @@ Note: the integration suite asserts `DATABASE_URL` contains `isha_practice_test`
 - `pnpm lint` – eslint
 - `pnpm typecheck` – tsc --noEmit
 - `pnpm check` – lint + typecheck
-- `pnpm test` – run tests (Vitest)
+- `pnpm test` – run tests (Vitest, loads `.env.test`)
 - `pnpm test:watch` – watch mode
 - `pnpm db:*` – Prisma helpers (`generate`, `migrate`, `seed`, etc.)
 
