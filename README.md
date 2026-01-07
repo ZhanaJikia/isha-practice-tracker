@@ -148,6 +148,33 @@ Open:
 
 ---
 
+## Testing (integration)
+
+These tests run against a **real Postgres test DB** via Prisma + transactions.
+
+### 1) Create the test database
+With the Docker DB running:
+
+```bash
+docker exec -it isha_tracker_db psql -U postgres -c "CREATE DATABASE isha_practice_test;"
+```
+
+### 2) Apply migrations to the test DB
+
+```bash
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/isha_practice_test?schema=public" pnpm db:deploy
+```
+
+### 3) Run tests
+
+```bash
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/isha_practice_test?schema=public" pnpm test
+```
+
+Note: the integration suite asserts `DATABASE_URL` contains `isha_practice_test` as a safety check.
+
+---
+
 ## Scripts
 
 - `pnpm dev` – start dev server
@@ -155,6 +182,8 @@ Open:
 - `pnpm lint` – eslint
 - `pnpm typecheck` – tsc --noEmit
 - `pnpm check` – lint + typecheck
+- `pnpm test` – run tests (Vitest)
+- `pnpm test:watch` – watch mode
 - `pnpm db:*` – Prisma helpers (`generate`, `migrate`, `seed`, etc.)
 
 ---
