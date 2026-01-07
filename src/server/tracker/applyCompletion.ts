@@ -7,10 +7,6 @@ export type ApplyCompletionResult =
 
 type CompletionKey = { userId: string; practiceId: string; dayKey: string };
 
-function isUniqueViolation(e: unknown): boolean {
-  return e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
-}
-
 async function findRow(tx: Prisma.TransactionClient, key: CompletionKey) {
   return tx.dailyPracticeCompletion.findUnique({
     where: { userId_practiceId_dayKey: key },
@@ -40,26 +36,14 @@ async function tryIncrement(
   if (res.count !== 1) return null;
 
   const row = await findRow(tx, key);
-  // Should exist after successful updateMany. If not, something is inconsistent.
   if (!row) throw new Error("Invariant failed: completion row missing after increment");
   return row;
 }
 
-async function createRow(
-  tx: Prisma.TransactionClient,
-  key: CompletionKey,
-  delta: number,
-  now: Date
-): Promise<DailyPracticeCompletion> {
-  return tx.dailyPracticeCompletion.create({
-    data: { ...key, count: delta, lastCompletedAt: now },
-  });
-}
-
 /**
- * Concurrency-safe completion increment:
- * - Enforces maxPerDay for (userId, practiceId, dayKey)
- * - Safe under parallel requests (uses conditional update + unique-create fallback)
+ * Important: avoids unique violations inside the transaction.
+ * Postgres aborts a transaction on ANY statement error (including unique constraint),
+ * even if you catch the error in application code.
  */
 export async function applyCompletion(
   tx: Prisma.TransactionClient,
@@ -77,21 +61,26 @@ export async function applyCompletion(
 
   if (delta > maxPerDay) return { kind: "max_reached", count: 0, maxPerDay };
 
-  // Fast path: conditional increment (won't exceed max)
+  // 1) Fast path: conditional increment (won't exceed max)
   const updated = await tryIncrement(tx, key, delta, maxPerDay, now);
   if (updated) return { kind: "ok", row: updated };
 
-  // If row doesn't exist, create it. If it races, retry increment.
-  try {
-    const created = await createRow(tx, key, delta, now);
-    return { kind: "ok", row: created };
-  } catch (e) {
-    if (!isUniqueViolation(e)) throw e;
+  // 2) Create without throwing on duplicates (prevents aborting the transaction)
+  const created = await tx.dailyPracticeCompletion.createMany({
+    data: [{ ...key, count: delta, lastCompletedAt: now }],
+    skipDuplicates: true,
+  });
 
-    const retry = await tryIncrement(tx, key, delta, maxPerDay, now);
-    if (retry) return { kind: "ok", row: retry };
-
-    const count = await findCount(tx, key);
-    return { kind: "max_reached", count, maxPerDay };
+  if (created.count === 1) {
+    const row = await findRow(tx, key);
+    if (!row) throw new Error("Invariant failed: completion row missing after createMany");
+    return { kind: "ok", row };
   }
+
+  // 3) Row already existed: retry increment; if it can't, we're maxed
+  const retry = await tryIncrement(tx, key, delta, maxPerDay, now);
+  if (retry) return { kind: "ok", row: retry };
+
+  const count = await findCount(tx, key);
+  return { kind: "max_reached", count, maxPerDay };
 }
