@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useState } from "react";
 import { fetchJson } from "@/lib/http/client";
 import { UI_TEXT } from "@/config/uiText";
@@ -21,7 +22,7 @@ export function StatsPanel() {
         if (!mounted) return;
         setData(stats);
       } catch (e: unknown) {
-        const err = e as { status?: number; message?: string };
+        const err = e as import("@/lib/http/client").HttpError;
         if (!mounted) return;
         if (err?.status === 401) setError(UI_TEXT.auth.pleaseLogin);
         else setError(err?.message ?? UI_TEXT.errors.statsFailed);

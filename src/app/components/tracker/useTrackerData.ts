@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Practice } from "@/config/practices";
-import type { CompletionsResponse } from "./types";
-import { getPractices, getCompletions } from "./api";
+import type { CompletionsResponse } from "@/lib/http/api";
+import { getPractices, getTodayCompletions } from "@/lib/http/api";
 import { UI_TEXT } from "@/config/uiText";
 
-type HttpLikeError = { status?: number; message?: string };
 
 export function useTrackerData() {
   const [practices, setPractices] = useState<Practice[] | null>(null);
@@ -19,11 +18,11 @@ export function useTrackerData() {
     setError(null);
 
     try {
-      const [p, c] = await Promise.all([getPractices(), getCompletions()]);
+      const [p, c] = await Promise.all([getPractices(), getTodayCompletions()]);
       setPractices(p.practices);
       setCompletions(c);
     } catch (e: unknown) {
-      const err = e as HttpLikeError;
+      const err = e as import("@/lib/http/client").HttpError;
       if (err?.status === 401) setError(UI_TEXT.auth.pleaseLogin);
       else setError(err?.message ?? UI_TEXT.errors.genericLoad);
     } finally {

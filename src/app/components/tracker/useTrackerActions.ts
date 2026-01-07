@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import type { PracticeKey } from "@/config/practices";
-import { donePractice, undoPractice } from "./api";
-
+import { postDone, postUndo } from "@/lib/http/api";
 import { UI_TEXT } from "@/config/uiText";
 
 function emitPracticeUpdated() {
@@ -18,14 +17,19 @@ export function useTrackerActions(reload: () => Promise<void>) {
     try {
       setBusyKey(practiceId);
       setActionError(null);
-      await donePractice(practiceId);
+      await postDone(practiceId);
       await reload();
       emitPracticeUpdated();
     } catch (e: unknown) {
-      const err = e as { status?: number; message?: string };
-      if (err?.status === 409) setActionError(err?.message ?? UI_TEXT.errors.maxReached);
-      else if (err?.status === 401) setActionError(UI_TEXT.auth.pleaseLogin);
-      else setActionError(err?.message ?? UI_TEXT.errors.doneFailed);
+      const err = e as import("@/lib/http/client").HttpError;
+
+      if (err?.code === "MAX_PER_DAY_REACHED") {
+        setActionError(UI_TEXT.errors.maxReached);
+      } else if (err?.status === 401) {
+        setActionError(UI_TEXT.auth.pleaseLogin);
+      } else {
+        setActionError(err?.message ?? UI_TEXT.errors.doneFailed);
+      }
     } finally {
       setBusyKey(null);
     }
@@ -35,7 +39,7 @@ export function useTrackerActions(reload: () => Promise<void>) {
     try {
       setBusyKey(practiceId);
       setActionError(null);
-      await undoPractice(practiceId);
+      await postUndo(practiceId);
       await reload();
       emitPracticeUpdated();
     } catch (e: unknown) {
