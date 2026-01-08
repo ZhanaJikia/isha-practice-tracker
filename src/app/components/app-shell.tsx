@@ -30,7 +30,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {/* Sidebar */}
           <aside className="hidden md:block">
             <div className="rounded-xl border bg-card p-4">
-              <div className="text-sm font-semibold">Isha Practice Tracker</div>
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <img src="/favicon.ico" alt="" className="h-4 w-4" />
+                <span>Isha Practice Tracker</span>
+              </div>
               <div className="mt-3">
                 <Separator />
               </div>
