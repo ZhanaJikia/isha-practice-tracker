@@ -18,7 +18,8 @@
     "postinstall": "prisma generate",
     "test": "dotenv -e .env.test -- vitest run",
     "test:watch": "dotenv -e .env.test -- vitest",
-    "prepare": "husky"
+    "prepare": "husky",
+     "vercel-build": "pnpm prisma generate && pnpm prisma migrate deploy && pnpm build"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
