@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { getCurrentUser } from "@/lib/auth";
 import { unauthorized, validationError, maxPerDayReached, internalError } from "@/lib/http/errors";
+import { logError } from "@/lib/log";
 import { done } from "@/server/tracker/done";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
       { status: 200 }
     );
   } catch (e) {
-    console.error("DONE_ERROR:", e);
+    logError("api/done", e, { userId: user.id });
     return internalError();
   }
 }
