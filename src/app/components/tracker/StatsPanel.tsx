@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { fetchJson } from "@/lib/http/client";
 import { UI_TEXT } from "@/config/uiText";
 
@@ -16,6 +17,7 @@ function clamp01(n: number) {
 }
 
 export function StatsPanel() {
+  const router = useRouter();
   const [data, setData] = useState<StatsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +33,10 @@ export function StatsPanel() {
       } catch (e: unknown) {
         const err = e as import("@/lib/http/client").HttpError;
         if (!mounted) return;
-        if (err?.status === 401) setError(UI_TEXT.auth.pleaseLogin);
+        if (err?.status === 401) {
+          setError(UI_TEXT.auth.pleaseLogin);
+          router.replace("/login");
+        }
         else setError(err?.message ?? UI_TEXT.errors.statsFailed);
         setData(null);
       }
@@ -44,7 +49,7 @@ export function StatsPanel() {
       mounted = false;
       window.removeEventListener("practice-updated", onUpdated);
     };
-  }, []);
+  }, [router]);
 
   if (error)
     return (

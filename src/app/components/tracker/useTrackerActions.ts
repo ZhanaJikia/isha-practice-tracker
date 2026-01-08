@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { PracticeKey } from "@/config/practices";
 import { postDone, postUndo } from "@/lib/http/api";
 import { UI_TEXT } from "@/config/uiText";
@@ -10,6 +11,7 @@ function emitPracticeUpdated() {
 }
 
 export function useTrackerActions(reload: () => Promise<void>) {
+  const router = useRouter();
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -27,6 +29,7 @@ export function useTrackerActions(reload: () => Promise<void>) {
         setActionError(UI_TEXT.errors.maxReached);
       } else if (err?.status === 401) {
         setActionError(UI_TEXT.auth.pleaseLogin);
+        router.replace("/login");
       } else {
         setActionError(err?.message ?? UI_TEXT.errors.doneFailed);
       }
@@ -43,9 +46,13 @@ export function useTrackerActions(reload: () => Promise<void>) {
       await reload();
       emitPracticeUpdated();
     } catch (e: unknown) {
-      const err = e as { status?: number; message?: string };
-      if (err?.status === 401) setActionError(UI_TEXT.auth.pleaseLogin);
-      else setActionError(err?.message ?? UI_TEXT.errors.undoFailed);
+      const err = e as import("@/lib/http/client").HttpError;
+      if (err?.status === 401) {
+        setActionError(UI_TEXT.auth.pleaseLogin);
+        router.replace("/login");
+      } else {
+        setActionError(err?.message ?? UI_TEXT.errors.undoFailed);
+      }
     } finally {
       setBusyKey(null);
     }
