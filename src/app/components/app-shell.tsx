@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
 import { LogoutButton } from "@/app/components/auth/LogoutButton"
+import Image from "next/image"
 
 const NAV = [
   { href: "/", label: "Dashboard" },
@@ -31,7 +32,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <aside className="hidden md:block">
             <div className="rounded-xl border bg-card p-4">
               <div className="flex items-center gap-2 text-sm font-semibold">
-                <img src="/favicon.ico" alt="" className="h-4 w-4" />
+                <Image src="/favicon.ico" alt="" width={16} height={16} />
                 <span>Isha Practice Tracker</span>
               </div>
               <div className="mt-3">
