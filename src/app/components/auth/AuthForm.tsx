@@ -2,19 +2,21 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-type Mode = "login" | "register";
+import { UI_TEXT } from "@/config/uiText";
+import { AuthSubmitButton } from "./AuthSubmitButton";
+import { AuthModeToggleButton } from "./AuthModeToggleButton";
+import { authErrorMessage, validateAuthInput, type AuthMode } from "./authValidation";
 
 export function AuthForm({
   initialMode = "login",
   successRedirectTo = "/",
 }: {
-  initialMode?: Mode;
+  initialMode?: AuthMode;
   successRedirectTo?: string;
 }) {
   const router = useRouter();
 
-  const [mode, setMode] = useState<Mode>(initialMode);
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
@@ -24,9 +26,10 @@ export function AuthForm({
   async function submit() {
     setError(null);
 
+    const inputError = validateAuthInput({ username, password });
+    if (inputError) return setError(inputError);
+
     const u = username.trim();
-    if (!u) return setError("Username is required");
-    if (!password) return setError("Password is required");
 
     setBusy(true);
     try {
@@ -39,10 +42,10 @@ export function AuthForm({
         body: JSON.stringify({ username: u, password }),
       });
 
-      const data = await res.json().catch(() => null);
+      const data: unknown = await res.json().catch(() => null);
 
       if (!res.ok) {
-        setError(data?.error ?? `${mode} failed`);
+        setError(authErrorMessage(mode, data));
         return;
       }
 
@@ -56,7 +59,7 @@ export function AuthForm({
   return (
     <section className="space-y-4">
       <h1 className="text-2xl font-semibold">
-        {mode === "login" ? "Login" : "Create account"}
+        {mode === "login" ? UI_TEXT.auth.loginTitle : UI_TEXT.auth.registerTitle}
       </h1>
 
       <div className="space-y-3">
@@ -87,23 +90,15 @@ export function AuthForm({
 
       {error && <div className="rounded border p-3 text-sm">{error}</div>}
 
-      <button
-        className="rounded border px-3 py-2 text-sm disabled:opacity-50"
-        onClick={submit}
-        disabled={busy}
-      >
-        {busy ? "…" : mode === "login" ? "Login" : "Register"}
-      </button>
-
-      <button
-        className="text-sm underline opacity-80"
-        onClick={() => {
+      <AuthSubmitButton mode={mode} busy={busy} onClick={submit} />
+      <AuthModeToggleButton
+        mode={mode}
+        onToggle={() => {
           setError(null);
           setMode(mode === "login" ? "register" : "login");
         }}
-      >
-        {mode === "login" ? "Need an account? Register" : "Have an account? Login"}
-      </button>
+      />
     </section>
   );
 }
+
