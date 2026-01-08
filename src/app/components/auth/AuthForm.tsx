@@ -10,9 +10,11 @@ import { authErrorMessage, validateAuthInput, type AuthMode } from "./authValida
 export function AuthForm({
   initialMode = "login",
   successRedirectTo = "/",
+  modeRoutes = { login: "/login", register: "/register" },
 }: {
   initialMode?: AuthMode;
   successRedirectTo?: string;
+  modeRoutes?: { login: string; register: string };
 }) {
   const router = useRouter();
 
@@ -95,7 +97,9 @@ export function AuthForm({
         mode={mode}
         onToggle={() => {
           setError(null);
-          setMode(mode === "login" ? "register" : "login");
+          const nextMode: AuthMode = mode === "login" ? "register" : "login";
+          setMode(nextMode);
+          router.push(nextMode === "login" ? modeRoutes.login : modeRoutes.register);
         }}
       />
     </section>
