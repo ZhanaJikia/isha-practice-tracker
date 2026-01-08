@@ -17,11 +17,7 @@ export const metadata: Metadata = {
   title: "Isha Practice Tracker",
   description: "Practice / habit tracker built with Next.js, Prisma, and Postgres.",
   icons: {
-    icon: [
-      { url: "/favicon/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/favicon/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon/favicon.ico" },
-    ],
+    icon: "/favicon.ico",
   },
 };
 
