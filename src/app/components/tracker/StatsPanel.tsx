@@ -8,6 +8,13 @@ type StatsResponse = {
   perPractice: Array<{ practiceId: string; label: string; count: number; points: number }>;
 };
 
+function clamp01(n: number) {
+  if (!Number.isFinite(n)) return 0;
+  if (n < 0) return 0;
+  if (n > 1) return 1;
+  return n;
+}
+
 export function StatsPanel() {
   const [data, setData] = useState<StatsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,21 +60,41 @@ export function StatsPanel() {
       </section>
     );
 
+  const maxPoints = Math.max(1, ...data.perPractice.map((p) => p.points));
+
   return (
-    <section className="rounded border p-3">
+    <section className="rounded border p-4">
       <h2 className="font-medium">
         Week points: {data.totals.totalPoints} · Active days: {data.totals.activeDays}
       </h2>
-      <ul className="mt-2 space-y-1 text-sm">
-        {data.perPractice.map((p) => (
-          <li key={p.practiceId} className="flex justify-between">
-            <span>{p.label}</span>
-            <span className="opacity-80">
-              {p.count} · {p.points} pts
-            </span>
-          </li>
-        ))}
-      </ul>
+
+      {/* Simple visual: per-practice points bars */}
+      <div className="mt-4 space-y-3">
+        {data.perPractice.map((p) => {
+          const pct = clamp01(p.points / maxPoints);
+          return (
+            <div key={p.practiceId} className="space-y-1">
+              <div className="flex items-baseline justify-between gap-4 text-sm">
+                <div className="min-w-0">
+                  <span className="truncate">{p.label}</span>
+                </div>
+                <div className="shrink-0 opacity-80">
+                  {p.count} · {p.points} pts
+                </div>
+              </div>
+              <div
+                className="h-2 w-full overflow-hidden rounded-full bg-muted"
+                aria-hidden="true"
+              >
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{ width: `${pct * 100}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }
