@@ -10,7 +10,7 @@ A full-stack practice / habit tracker built with **Next.js (App Router)**, **Pri
 
 ## Live Demo (Vercel)
 
-- **Login**: [isha-practice-tracker (Vercel)](https://isha-practice-tracker-9lxkd7myg-zhanajikias-projects.vercel.app/login)
+- **Login**: [isha-practice-tracker (Vercel)](https://isha-practice-tracker.vercel.app/login)
 
 ---
 
