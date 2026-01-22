@@ -38,3 +38,11 @@ export function postUndo(practiceId: string) {
     body: JSON.stringify({ practiceId }),
   });
 }
+
+export type OnboardingResponse = {
+  practiceIds: string[];
+};
+
+export function getOnboarding() {
+  return fetchJson<OnboardingResponse>("/api/onboarding", { cache: "no-store" });
+}
