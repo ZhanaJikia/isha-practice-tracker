@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Practice } from "@/config/practices";
-import type { CompletionsResponse } from "@/lib/http/api";
-import { getPractices, getTodayCompletions } from "@/lib/http/api";
+import { isPracticeKey, PRACTICE_BY_KEY, PRACTICES } from "@/config/practices";
+import { getOnboarding, getTodayCompletions, type CompletionsResponse } from "@/lib/http/api";
 import { UI_TEXT } from "@/config/uiText";
 
 
@@ -20,8 +20,13 @@ export function useTrackerData() {
     setError(null);
 
     try {
-      const [p, c] = await Promise.all([getPractices(), getTodayCompletions()]);
-      setPractices(p.practices);
+      const [o, c] = await Promise.all([getOnboarding(), getTodayCompletions()]);
+
+      const selected = o.practiceIds.filter(isPracticeKey);
+      const practices =
+        selected.length > 0 ? selected.map((id) => PRACTICE_BY_KEY[id]) : [...PRACTICES];
+      
+      setPractices(practices);
       setCompletions(c);
     } catch (e: unknown) {
       const err = e as import("@/lib/http/client").HttpError;
