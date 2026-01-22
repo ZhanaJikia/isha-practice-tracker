@@ -193,7 +193,13 @@ SESSION_TTL_DAYS="30"
 SESSION_COOKIE_NAME="isha_session"
 ```
 
-### 4) Migrate (and optionally seed)
+Notes:
+
+- `DATABASE_URL` must be a valid URL. If you see errors referencing host `"base"`, you likely exported `DATABASE_URL` in your shell; run `unset DATABASE_URL` and restart.
+
+### 4) Migrate + seed
+
+This project stores practice definitions in the database (`Practice` table). Seeding creates the built-in practices.
 
 ```bash
 pnpm db:migrate
@@ -233,10 +239,11 @@ Create `.env.test` in the repo root:
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/isha_practice_test?schema=public"
 ```
 
-### 3) Apply migrations to the test DB
+### 3) Apply migrations + seed to the test DB
 
 ```bash
 pnpm db:deploy
+pnpm db:seed
 ```
 
 ### 4) Run tests
@@ -288,6 +295,10 @@ Set these in **Vercel → Project → Settings → Environment Variables**:
 - `BCRYPT_COST`
 - `SESSION_TTL_DAYS`
 - `SESSION_COOKIE_NAME`
+
+### Staging / Preview
+
+No code changes are needed for staging. Set `DATABASE_URL` to your staging database connection string in your deployment platform’s environment variables.
 
 ### Migrations on deploy
 
