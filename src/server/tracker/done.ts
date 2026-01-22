@@ -35,16 +35,29 @@ export async function done(params: {
   const practiceId = params.practiceId;
   const maxPerDay = PRACTICE_BY_KEY[practiceId].maxPerDay;
 
-  const result = await prisma.$transaction((tx) =>
-    applyCompletion(tx, {
+  const result = await prisma.$transaction(async (tx) => {
+    await tx.practice.upsert({
+      where: { id: practiceId },
+      create: {
+        id: practiceId,
+        name: PRACTICE_BY_KEY[practiceId].label,
+        isCustom: false,
+      },
+      update: {
+        name: PRACTICE_BY_KEY[practiceId].label,
+        isCustom: false,
+      },
+    });
+
+    return applyCompletion(tx, {
       userId: params.userId,
       practiceId,
       dayKey,
       delta,
       maxPerDay,
       now,
-    })
-  );
+    });
+  });
 
   if (result.kind === "max_reached") {
     return {
