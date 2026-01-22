@@ -2,6 +2,7 @@
 import "dotenv/config";
 import bcrypt from "bcrypt";
 import { prisma } from "../src/lib/db";
+import { PRACTICES } from "../src/config/practices";
 
 async function main() {
   const users = [
@@ -20,7 +21,22 @@ async function main() {
     });
   }
 
-  console.log("✅ Seeded demo users");
+  for (const p of PRACTICES) {
+    await prisma.practice.upsert({
+      where: { id: p.key },
+      update: {
+        name: p.label,           
+        isCustom: false,         
+      },
+      create: {
+        id: p.key,               
+        name: p.label, 
+        isCustom: false,
+      },
+    });
+  }
+
+  console.log("✅ Seeded demo users + practices");
 }
 
 main()
