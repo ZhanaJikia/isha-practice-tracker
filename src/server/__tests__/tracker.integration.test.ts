@@ -39,6 +39,12 @@ describe("integration: tracker business rules", () => {
     const practiceId = "walk";
     const maxPerDay = 2;
 
+    await prisma.practice.upsert({
+      where: { id: practiceId },
+      update: { name: "Walk", isCustom: false },
+      create: { id: practiceId, name: "Walk", isCustom: false },
+    });
+
     const r = await prisma.$transaction((tx) =>
       applyCompletion(tx, { userId: user.id, practiceId, dayKey, delta: 3, maxPerDay, now })
     );
@@ -57,6 +63,12 @@ describe("integration: tracker business rules", () => {
 
     const dayKey = "2026-01-07";
     const practiceId = "walk";
+
+    await prisma.practice.upsert({
+      where: { id: practiceId },
+      update: { name: "Walk", isCustom: false },
+      create: { id: practiceId, name: "Walk", isCustom: false },
+    });
 
     await prisma.dailyPracticeCompletion.create({
       data: { userId: user.id, practiceId, dayKey, count: 1, lastCompletedAt: new Date() },

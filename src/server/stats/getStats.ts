@@ -1,7 +1,12 @@
 import { parseDayKey } from "@/lib/time";
 import type { Db, StatsRange, StatsResponse } from "./types";
 import { totalsBounds, whereForBounds, chartWindowForAll } from "./bounds";
-import { fetchCountByPractice, fetchActiveDays, fetchDailyPracticeSums } from "./repo";
+import {
+  fetchSelectedPractices,
+  fetchCountByPractice,
+  fetchActiveDays,
+  fetchDailyPracticeSums,
+} from "./repo";
 import { buildPerPractice, buildDailySeries } from "./build";
 
 export async function getStats(
@@ -24,15 +29,16 @@ export async function getStats(
       ? { dayKey: { gte: chartWindow.startDayKey, lte: chartWindow.endDayKey } }
       : whereTotals;
 
+  const practices = await fetchSelectedPractices(db, userId);
   const countByPracticeRaw = await fetchCountByPractice(db, userId, whereTotals);
-  const perPractice = buildPerPractice(countByPracticeRaw);
+  const perPractice = buildPerPractice(practices, countByPracticeRaw);
 
   const totalCount = perPractice.reduce((a, p) => a + p.count, 0);
   const totalPoints = perPractice.reduce((a, p) => a + p.points, 0);
 
   const activeDays = await fetchActiveDays(db, userId, whereTotals);
   const dailyRows = await fetchDailyPracticeSums(db, userId, whereCharts);
-  const dailySeries = buildDailySeries(dailyRows);
+  const dailySeries = buildDailySeries(practices, dailyRows);
 
   return {
     range,

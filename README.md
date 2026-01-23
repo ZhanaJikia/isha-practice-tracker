@@ -83,6 +83,13 @@ A full-stack practice / habit tracker built with **Next.js (App Router)**, **Pri
 - **User**
   - `username` unique
   - `passwordHash`
+- **Practice**
+  - Built-in and user-created practices live in the database
+  - `points`, `maxPerDay` drive scoring + button disabling
+  - Custom practices are `isCustom=true` and `ownerId=user.id`
+- **UserPractice**
+  - Join table for the user’s selected practices
+  - Used to enforce “you can only Done/Undo what you selected”
 - **Session**
   - Stores **only `tokenHash`** (raw token never stored)
   - Has `expiresAt` + indexes for cleanup/lookup
@@ -128,7 +135,10 @@ Atomic core: `src/server/completions/undoCompletion.ts`
 
 ### Tracker / Stats
 
-- `GET /api/practices` → list practices from config
+- `GET /api/practices` → list practices from DB (built-in + your custom)
+- `POST /api/practices/custom` → create a custom practice (also auto-selects it)
+- `GET /api/onboarding` → current selected practice IDs
+- `POST /api/onboarding/save` → replace selected practices (**max 10**)
 - `GET /api/completions?dayKey=YYYY-MM-DD` → day completions (defaults to today in `APP_TZ`)
 - `POST /api/done` `{ practiceId, delta? }` → increment (max-per-day enforced)
 - `POST /api/undo` `{ practiceId, delta? }` → decrement (deletes row at 0)
@@ -193,7 +203,13 @@ SESSION_TTL_DAYS="30"
 SESSION_COOKIE_NAME="isha_session"
 ```
 
-### 4) Migrate (and optionally seed)
+Notes:
+
+- `DATABASE_URL` must be a valid URL. If you see errors referencing host `"base"`, you likely exported `DATABASE_URL` in your shell; run `unset DATABASE_URL` and restart.
+
+### 4) Migrate + seed
+
+This project stores practice definitions in the database (`Practice` table). Seeding creates the built-in practices.
 
 ```bash
 pnpm db:migrate
@@ -210,6 +226,8 @@ Open:
 
 - `/login` to register/login
 - `/` for the tracker UI
+- `/practices` to manage your selected practices later
+- `/onboarding` is used for first-time setup (new registrations redirect here)
 
 ---
 
@@ -233,10 +251,11 @@ Create `.env.test` in the repo root:
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/isha_practice_test?schema=public"
 ```
 
-### 3) Apply migrations to the test DB
+### 3) Apply migrations + seed to the test DB
 
 ```bash
 pnpm db:deploy
+pnpm db:seed
 ```
 
 ### 4) Run tests
@@ -248,6 +267,7 @@ pnpm test
 Notes:
 
 - `pnpm test` loads `.env.test` via `dotenv-cli`.
+- `pnpm test` also runs `pnpm db:deploy` + `pnpm db:seed` before Vitest, so your test DB stays up to date.
 - The integration suite asserts `DATABASE_URL` contains `isha_practice_test` as a safety check.
 
 ---
@@ -288,6 +308,10 @@ Set these in **Vercel → Project → Settings → Environment Variables**:
 - `BCRYPT_COST`
 - `SESSION_TTL_DAYS`
 - `SESSION_COOKIE_NAME`
+
+### Staging / Preview
+
+No code changes are needed for staging. Set `DATABASE_URL` to your staging database connection string in your deployment platform’s environment variables.
 
 ### Migrations on deploy
 

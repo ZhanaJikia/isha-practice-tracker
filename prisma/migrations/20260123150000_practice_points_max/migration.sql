@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Practice"
+ADD COLUMN     "points" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "maxPerDay" INTEGER NOT NULL DEFAULT 1;
+
