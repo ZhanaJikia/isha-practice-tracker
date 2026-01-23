@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { PracticeKey } from "@/config/practices";
 import { postDone, postUndo } from "@/lib/http/api";
 import { UI_TEXT } from "@/config/uiText";
 
@@ -15,7 +14,7 @@ export function useTrackerActions(reload: () => Promise<void>) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  async function onDone(practiceId: PracticeKey) {
+  async function onDone(practiceId: string) {
     try {
       setBusyKey(practiceId);
       setActionError(null);
@@ -38,7 +37,7 @@ export function useTrackerActions(reload: () => Promise<void>) {
     }
   }
 
-  async function onUndo(practiceId: PracticeKey) {
+  async function onUndo(practiceId: string) {
     try {
       setBusyKey(practiceId);
       setActionError(null);

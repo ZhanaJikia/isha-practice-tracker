@@ -1,12 +1,11 @@
 import { prisma } from "@/lib/db";
 import { dayKeyNow } from "@/lib/time";
-import { PRACTICE_BY_KEY, isPracticeKey } from "@/config/practices";
 import { applyCompletion } from "@/server/tracker/applyCompletion";
 
 export type DoneResult =
   | {
       kind: "ok";
-      completion: unknown; // keep it unknown here if you don’t want to import Prisma types
+      completion: unknown;
       dayKey: string;
       practiceId: string;
       maxPerDay: number;
@@ -30,45 +29,49 @@ export async function done(params: {
   const dayKey = params.dayKey ?? dayKeyNow();
   const now = params.now ?? new Date();
   const delta = params.delta ?? 1;
-
-  if (!isPracticeKey(params.practiceId)) return { kind: "invalid_practice" };
   const practiceId = params.practiceId;
-  const maxPerDay = PRACTICE_BY_KEY[practiceId].maxPerDay;
 
   const result = await prisma.$transaction(async (tx) => {
-    await tx.practice.upsert({
-      where: { id: practiceId },
-      create: {
+    const practice = await tx.practice.findFirst({
+      where: {
         id: practiceId,
-        name: PRACTICE_BY_KEY[practiceId].label,
-        isCustom: false,
+        archivedAt: null,
+        userPractices: { some: { userId: params.userId } },
       },
-      update: {
-        name: PRACTICE_BY_KEY[practiceId].label,
-        isCustom: false,
-      },
+      select: { id: true, maxPerDay: true },
     });
 
-    return applyCompletion(tx, {
+    if (!practice) return { kind: "invalid_practice" } as const;
+
+    const applied = await applyCompletion(tx, {
       userId: params.userId,
       practiceId,
       dayKey,
       delta,
-      maxPerDay,
+      maxPerDay: practice.maxPerDay,
       now,
     });
+
+    return { kind: "applied", applied, maxPerDay: practice.maxPerDay } as const;
   });
 
-  if (result.kind === "max_reached") {
+  if (result.kind === "invalid_practice") return { kind: "invalid_practice" };
+
+  if (result.applied.kind === "max_reached") {
     return {
       kind: "max_reached",
       practiceId,
       dayKey,
-      maxPerDay: result.maxPerDay,
-      count: result.count,
+      maxPerDay: result.applied.maxPerDay,
+      count: result.applied.count,
     };
   }
 
-  return { kind: "ok", completion: result.row, dayKey, practiceId, maxPerDay };
+  return {
+    kind: "ok",
+    completion: result.applied.row,
+    dayKey,
+    practiceId,
+    maxPerDay: result.maxPerDay,
+  };
 }
-

@@ -25,12 +25,16 @@ async function main() {
     await prisma.practice.upsert({
       where: { id: p.key },
       update: {
-        name: p.label,           
-        isCustom: false,         
+        name: p.label,
+        points: p.points,
+        maxPerDay: p.maxPerDay,
+        isCustom: false,
       },
       create: {
-        id: p.key,               
-        name: p.label, 
+        id: p.key,
+        name: p.label,
+        points: p.points,
+        maxPerDay: p.maxPerDay,
         isCustom: false,
       },
     });

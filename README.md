@@ -83,6 +83,13 @@ A full-stack practice / habit tracker built with **Next.js (App Router)**, **Pri
 - **User**
   - `username` unique
   - `passwordHash`
+- **Practice**
+  - Built-in and user-created practices live in the database
+  - `points`, `maxPerDay` drive scoring + button disabling
+  - Custom practices are `isCustom=true` and `ownerId=user.id`
+- **UserPractice**
+  - Join table for the user’s selected practices
+  - Used to enforce “you can only Done/Undo what you selected”
 - **Session**
   - Stores **only `tokenHash`** (raw token never stored)
   - Has `expiresAt` + indexes for cleanup/lookup
@@ -128,7 +135,10 @@ Atomic core: `src/server/completions/undoCompletion.ts`
 
 ### Tracker / Stats
 
-- `GET /api/practices` → list practices from config
+- `GET /api/practices` → list practices from DB (built-in + your custom)
+- `POST /api/practices/custom` → create a custom practice (also auto-selects it)
+- `GET /api/onboarding` → current selected practice IDs
+- `POST /api/onboarding/save` → replace selected practices (**max 10**)
 - `GET /api/completions?dayKey=YYYY-MM-DD` → day completions (defaults to today in `APP_TZ`)
 - `POST /api/done` `{ practiceId, delta? }` → increment (max-per-day enforced)
 - `POST /api/undo` `{ practiceId, delta? }` → decrement (deletes row at 0)
@@ -216,6 +226,8 @@ Open:
 
 - `/login` to register/login
 - `/` for the tracker UI
+- `/practices` to manage your selected practices later
+- `/onboarding` is used for first-time setup (new registrations redirect here)
 
 ---
 
@@ -255,6 +267,7 @@ pnpm test
 Notes:
 
 - `pnpm test` loads `.env.test` via `dotenv-cli`.
+- `pnpm test` also runs `pnpm db:deploy` + `pnpm db:seed` before Vitest, so your test DB stays up to date.
 - The integration suite asserts `DATABASE_URL` contains `isha_practice_test` as a safety check.
 
 ---

@@ -1,5 +1,13 @@
 import { fetchJson } from "@/lib/http/client";
-import type { Practice } from "@/config/practices";
+
+export type PracticeDto = {
+  id: string;
+  name: string;
+  description: string | null;
+  isCustom: boolean;
+  points: number;
+  maxPerDay: number;
+};
 
 export type CompletionsResponse = {
   dayKey: string;
@@ -16,7 +24,7 @@ export type CompletionsResponse = {
 };
 
 export function getPractices() {
-  return fetchJson<{ practices: Practice[] }>("/api/practices", { cache: "no-store" });
+  return fetchJson<{ practices: PracticeDto[] }>("/api/practices", { cache: "no-store" });
 }
 
 export function getTodayCompletions() {
@@ -45,4 +53,17 @@ export type OnboardingResponse = {
 
 export function getOnboarding() {
   return fetchJson<OnboardingResponse>("/api/onboarding", { cache: "no-store" });
+}
+
+export function createCustomPractice(params: {
+  name: string;
+  points?: number;
+  maxPerDay?: number;
+  description?: string;
+}) {
+  return fetchJson<{ practice: PracticeDto }>("/api/practices/custom", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
 }

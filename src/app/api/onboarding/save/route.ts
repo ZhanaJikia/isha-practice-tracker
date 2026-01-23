@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { isPracticeKey } from "@/config/practices";
 import { unauthorized, validationError, internalError } from "@/lib/http/errors";
 
 export const dynamic = "force-dynamic";
@@ -21,12 +20,19 @@ export async function POST(req: Request) {
 
   const practiceIds = parsed.data.practiceIds;
 
-  const invalid = practiceIds.filter((id) => !isPracticeKey(id));
+  // Validate practiceIds exist and are accessible (built-in or owned by user).
+  const rows = await prisma.practice.findMany({
+    where: {
+      id: { in: practiceIds },
+      archivedAt: null,
+      OR: [{ ownerId: null }, { ownerId: user.id }],
+    },
+    select: { id: true },
+  });
+  const ok = new Set(rows.map((r) => r.id));
+  const invalid = practiceIds.filter((id) => !ok.has(id));
   if (invalid.length) {
-    return validationError(
-      { practiceIds: [`Unknown practiceIds: ${invalid.join(", ")}`] },
-      "Invalid input"
-    );
+    return validationError({ practiceIds: [`Unknown practiceIds: ${invalid.join(", ")}`] }, "Invalid input");
   }
 
   try {

@@ -1,6 +1,6 @@
 "use client";
 
-import type { PracticeKey, Practice } from "@/config/practices";
+import type { PracticeDto } from "@/lib/http/api";
 
 export function PracticeRow({
   practice,
@@ -9,11 +9,11 @@ export function PracticeRow({
   onDone,
   onUndo,
 }: {
-  practice: Practice;
+  practice: PracticeDto;
   count: number;
   busy: boolean;
-  onDone: (id: PracticeKey) => void;
-  onUndo: (id: PracticeKey) => void;
+  onDone: (id: string) => void;
+  onUndo: (id: string) => void;
 }) {
   const disabledDone = busy || count >= practice.maxPerDay;
   const disabledUndo = busy || count <= 0;
@@ -22,10 +22,9 @@ export function PracticeRow({
     <li className="rounded border p-3">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <div className="font-medium">{practice.label}</div>
+          <div className="font-medium">{practice.name}</div>
           <div className="text-sm opacity-70">
-            today: {count}/{practice.maxPerDay} · {practice.points} pts each · key:{" "}
-            <span className="font-mono">{practice.key}</span>
+            today: {count}/{practice.maxPerDay} · {practice.points} pts each
           </div>
         </div>
 
@@ -33,7 +32,7 @@ export function PracticeRow({
           <button
             className="rounded border px-3 py-2 text-sm disabled:opacity-50"
             disabled={disabledUndo}
-            onClick={() => onUndo(practice.key)}
+            onClick={() => onUndo(practice.id)}
           >
             Undo
           </button>
@@ -41,7 +40,7 @@ export function PracticeRow({
           <button
             className="rounded border px-3 py-2 text-sm disabled:opacity-50"
             disabled={disabledDone}
-            onClick={() => onDone(practice.key)}
+            onClick={() => onDone(practice.id)}
           >
             Done
           </button>

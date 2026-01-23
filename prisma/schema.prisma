@@ -30,6 +30,8 @@ model Practice {
   name        String
   description String?
   isCustom    Boolean @default(false)
+  points      Int     @default(1)
+  maxPerDay   Int     @default(1)
 
   ownerId String?
   owner   User?   @relation("UserOwnedPractices", fields: [ownerId], references: [id], onDelete: Cascade)

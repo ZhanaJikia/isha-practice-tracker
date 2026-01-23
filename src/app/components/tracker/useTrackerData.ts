@@ -2,15 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Practice } from "@/config/practices";
-import { isPracticeKey, PRACTICE_BY_KEY, PRACTICES } from "@/config/practices";
-import { getOnboarding, getTodayCompletions, type CompletionsResponse } from "@/lib/http/api";
+import {
+  getOnboarding,
+  getPractices,
+  getTodayCompletions,
+  type CompletionsResponse,
+  type PracticeDto,
+} from "@/lib/http/api";
 import { UI_TEXT } from "@/config/uiText";
 
 
 export function useTrackerData() {
   const router = useRouter();
-  const [practices, setPractices] = useState<Practice[] | null>(null);
+  const [practices, setPractices] = useState<PracticeDto[] | null>(null);
   const [completions, setCompletions] = useState<CompletionsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -20,11 +24,10 @@ export function useTrackerData() {
     setError(null);
 
     try {
-      const [o, c] = await Promise.all([getOnboarding(), getTodayCompletions()]);
+      const [o, p, c] = await Promise.all([getOnboarding(), getPractices(), getTodayCompletions()]);
 
-      const selected = o.practiceIds.filter(isPracticeKey);
-      const practices =
-        selected.length > 0 ? selected.map((id) => PRACTICE_BY_KEY[id]) : [...PRACTICES];
+      const byId = Object.fromEntries(p.practices.map((x) => [x.id, x]));
+      const practices = o.practiceIds.map((id) => byId[id]).filter(Boolean);
       
       setPractices(practices);
       setCompletions(c);
