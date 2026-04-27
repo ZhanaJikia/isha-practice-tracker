@@ -1,26 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "Isha Practice Tracker",
-  description: "Practice / habit tracker built with Next.js, Prisma, and Postgres.",
+  title: "Sacred 5",
+  description: "Track your five sacred daily practices — walks, cold showers, journaling, and meditation.",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/favicon.svg",
   },
 };
-
 
 export default function RootLayout({
   children,
@@ -30,7 +18,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
+        className="antialiased min-h-screen bg-[var(--background)] text-[var(--foreground)]"
+        style={
+          {
+            "--font-geist-sans":
+              'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            "--font-geist-mono":
+              'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+          } as React.CSSProperties
+        }
       >
         {children}
         <Toaster richColors closeButton />
