@@ -2,15 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Practice } from "@/config/practices";
-import type { CompletionsResponse } from "@/lib/http/api";
-import { getPractices, getTodayCompletions } from "@/lib/http/api";
+import {
+  getOnboarding,
+  getPractices,
+  getTodayCompletions,
+  type CompletionsResponse,
+  type PracticeDto,
+} from "@/lib/http/api";
 import { UI_TEXT } from "@/config/uiText";
 
 
 export function useTrackerData() {
   const router = useRouter();
-  const [practices, setPractices] = useState<Practice[] | null>(null);
+  const [practices, setPractices] = useState<PracticeDto[] | null>(null);
   const [completions, setCompletions] = useState<CompletionsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -20,8 +24,12 @@ export function useTrackerData() {
     setError(null);
 
     try {
-      const [p, c] = await Promise.all([getPractices(), getTodayCompletions()]);
-      setPractices(p.practices);
+      const [o, p, c] = await Promise.all([getOnboarding(), getPractices(), getTodayCompletions()]);
+
+      const byId = Object.fromEntries(p.practices.map((x) => [x.id, x]));
+      const practices = o.practiceIds.map((id) => byId[id]).filter(Boolean);
+      
+      setPractices(practices);
       setCompletions(c);
     } catch (e: unknown) {
       const err = e as import("@/lib/http/client").HttpError;

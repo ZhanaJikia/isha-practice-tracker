@@ -4,7 +4,6 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { dayKeyNow, parseDayKey } from "@/lib/time";
-import { isPracticeKey } from "@/config/practices";
 
 import {
   unauthorized,
@@ -52,10 +51,9 @@ export async function GET(req: Request) {
       orderBy: { practiceId: "asc" },
     });
 
-    const completions = rows.filter((r) => isPracticeKey(r.practiceId));
-    const byPracticeId = Object.fromEntries(completions.map((r) => [r.practiceId, r]));
+    const byPracticeId = Object.fromEntries(rows.map((r) => [r.practiceId, r]));
 
-    return NextResponse.json({ dayKey, completions, byPracticeId }, { status: 200 });
+    return NextResponse.json({ dayKey, completions: rows, byPracticeId }, { status: 200 });
   } catch (e) {
     console.error("COMPLETIONS_ERROR:", e);
     return internalError();

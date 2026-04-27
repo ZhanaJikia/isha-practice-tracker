@@ -11,7 +11,7 @@ export type PracticeKey = Practice["key"];
 
 export const PRACTICE_KEYS = PRACTICES.map((p) => p.key) as PracticeKey[];
 
-// Dev-only sanity check
+
 if (process.env.NODE_ENV !== "production") {
   const unique = new Set(PRACTICE_KEYS);
   if (unique.size !== PRACTICE_KEYS.length) {
@@ -19,7 +19,7 @@ if (process.env.NODE_ENV !== "production") {
   }
 }
 
-// Typed map builder (no unsafe Record cast as much as possible)
+
 export const PRACTICE_BY_KEY = PRACTICES.reduce((acc, p) => {
   acc[p.key] = p;
   return acc;

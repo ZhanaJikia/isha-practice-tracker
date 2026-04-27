@@ -103,10 +103,10 @@ export function PracticesList() {
       <ul className="space-y-3">
         {practices.map((p) => (
           <PracticeRow
-            key={p.key}
+            key={p.id}
             practice={p}
-            count={byPracticeId[p.key]?.count ?? 0}
-            busy={busyKey === p.key}
+            count={byPracticeId[p.id]?.count ?? 0}
+            busy={busyKey === p.id}
             onDone={onDone}
             onUndo={onUndo}
           />
