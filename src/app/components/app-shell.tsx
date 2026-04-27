@@ -10,19 +10,11 @@ import Image from "next/image"
 const NAV = [
   { href: "/", label: "Dashboard" },
   { href: "/stats", label: "Stats" },
-  { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/practices", label: "Practices" },
 ]
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const title =
-    pathname === "/"
-      ? "Dashboard"
-      : pathname.startsWith("/stats")
-        ? "Stats"
-        : pathname.startsWith("/leaderboard")
-          ? "Leaderboard"
-          : "App"
 
   return (
     <div className="min-h-screen bg-background">
@@ -72,18 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </aside>
 
-          {/* Main */}
           <main>
-            {/* Topbar (simple) */}
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <div className="text-lg font-semibold">{title}</div>
-                <div className="text-sm text-muted-foreground">
-                  Track your practices and see progress.
-                </div>
-              </div>
-            </div>
-
             {children}
           </main>
         </div>

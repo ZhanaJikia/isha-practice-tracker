@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { UI_TEXT } from "@/config/uiText";
-import { AuthSubmitButton } from "./AuthSubmitButton";
-import { AuthModeToggleButton } from "./AuthModeToggleButton";
 import { authErrorMessage, validateAuthInput, type AuthMode } from "./authValidation";
+import { cn } from "@/lib/utils";
 
 export function AuthForm({
   initialMode = "login",
@@ -21,6 +21,7 @@ export function AuthForm({
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -58,51 +59,120 @@ export function AuthForm({
     }
   }
 
-  return (
-    <section className="space-y-4">
-      <h1 className="text-2xl font-semibold">
-        {mode === "login" ? UI_TEXT.auth.loginTitle : UI_TEXT.auth.registerTitle}
-      </h1>
+  const isLogin = mode === "login";
 
+  return (
+    <section className="space-y-5">
+      {/* Mode tabs */}
+      <div className="flex rounded-xl bg-muted p-1">
+        {(["login", "register"] as AuthMode[]).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => {
+              setError(null);
+              setMode(m);
+              router.push(m === "login" ? modeRoutes.login : modeRoutes.register);
+            }}
+            className={cn(
+              "flex-1 rounded-lg py-2 text-sm font-medium transition-all",
+              mode === m
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {m === "login" ? "Sign in" : "Create account"}
+          </button>
+        ))}
+      </div>
+
+      {/* Fields */}
       <div className="space-y-3">
-        <label className="block text-sm">
-          Username
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-foreground" htmlFor="username">
+            Username
+          </label>
           <input
-            className="mt-1 w-full rounded border bg-transparent p-2"
+            id="username"
+            className={cn(
+              "w-full rounded-xl border bg-background px-3.5 py-2.5 text-sm transition",
+              "placeholder:text-muted-foreground",
+              "focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring",
+              error && "border-destructive focus:ring-destructive"
+            )}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="your_username"
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
+            onKeyDown={(e) => e.key === "Enter" && void submit()}
           />
-        </label>
+        </div>
 
-        <label className="block text-sm">
-          Password
-          <input
-            className="mt-1 w-full rounded border bg-transparent p-2"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-          />
-        </label>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-foreground" htmlFor="password">
+            Password
+          </label>
+          <div className="relative">
+            <input
+              id="password"
+              className={cn(
+                "w-full rounded-xl border bg-background px-3.5 py-2.5 pr-10 text-sm transition",
+                "placeholder:text-muted-foreground",
+                "focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring",
+                error && "border-destructive focus:ring-destructive"
+              )}
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              onKeyDown={(e) => e.key === "Enter" && void submit()}
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+              onClick={() => setShowPassword((v) => !v)}
+              tabIndex={-1}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
-      {error && <div className="rounded border p-3 text-sm">{error}</div>}
+      {/* Error */}
+      {error && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/8 px-3.5 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
-      <AuthSubmitButton mode={mode} busy={busy} onClick={submit} />
-      <AuthModeToggleButton
-        mode={mode}
-        onToggle={() => {
-          setError(null);
-          const nextMode: AuthMode = mode === "login" ? "register" : "login";
-          setMode(nextMode);
-          router.push(nextMode === "login" ? modeRoutes.login : modeRoutes.register);
-        }}
-      />
+      {/* Submit button */}
+      <button
+        className={cn(
+          "relative w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all",
+          "bg-primary hover:bg-primary/90 active:scale-[0.98]",
+          "disabled:cursor-not-allowed disabled:opacity-60"
+        )}
+        onClick={() => void submit()}
+        disabled={busy}
+      >
+        {busy ? (
+          <span className="flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {isLogin ? "Signing in…" : "Creating account…"}
+          </span>
+        ) : isLogin ? (
+          UI_TEXT.auth.loginButton
+        ) : (
+          UI_TEXT.auth.registerButton
+        )}
+      </button>
     </section>
   );
 }
-

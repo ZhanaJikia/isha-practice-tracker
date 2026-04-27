@@ -1,5 +1,19 @@
 import type { Db } from "./types";
 
+export async function fetchSelectedPractices(db: Db, userId: string) {
+  const rows = await db.userPractice.findMany({
+    where: { userId },
+    select: {
+      practice: {
+        select: { id: true, name: true, points: true, maxPerDay: true, archivedAt: true },
+      },
+    },
+    orderBy: { practiceId: "asc" },
+  });
+
+  return rows.map((r) => r.practice).filter((p) => !p.archivedAt);
+}
+
 export async function fetchCountByPractice(db: Db, userId: string, whereRange: object) {
   const rows = await db.dailyPracticeCompletion.groupBy({
     by: ["practiceId"],

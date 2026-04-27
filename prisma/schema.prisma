@@ -18,8 +18,44 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
 
-  sessions     Session[]
-  completions  DailyPracticeCompletion[]
+  sessions      Session[]
+  completions   DailyPracticeCompletion[]
+  userPractices UserPractice[]
+
+  practicesOwned Practice[] @relation("UserOwnedPractices")
+}
+
+model Practice {
+  id          String  @id
+  name        String
+  description String?
+  isCustom    Boolean @default(false)
+  points      Int     @default(1)
+  maxPerDay   Int     @default(1)
+
+  ownerId String?
+  owner   User?   @relation("UserOwnedPractices", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime  @default(now())
+  archivedAt DateTime?
+
+  userPractices UserPractice[]
+  completions   DailyPracticeCompletion[]
+
+  @@index([ownerId])
+}
+
+model UserPractice {
+  userId     String
+  practiceId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  practice Practice @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, practiceId])
+  @@index([userId])
+  @@index([practiceId])
 }
 
 model Session {
@@ -35,22 +71,20 @@ model Session {
   @@index([expiresAt])
 }
 
-
-
 model DailyPracticeCompletion {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   userId          String
   practiceId      String
-  dayKey          String   // "YYYY-MM-DD" in APP_TZ
-  count           Int      @default(0)
+  dayKey          String
+  count           Int       @default(0)
   lastCompletedAt DateTime?
-  updatedAt       DateTime @updatedAt
+  updatedAt       DateTime  @updatedAt
 
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  practice Practice @relation(fields: [practiceId], references: [id], onDelete: Cascade)
 
   @@unique([userId, practiceId, dayKey])
   @@index([dayKey])
   @@index([practiceId, dayKey])
   @@index([userId, dayKey])
 }
-
